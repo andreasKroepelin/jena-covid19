@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.4
+# v0.12.15
 
 using Markdown
 using InteractiveUtils
@@ -21,6 +21,9 @@ md"""
 # Development of the Sars-CoV-2 pandemic in the city of Jena
 """
 
+# ╔═╡ dcca0fc6-5090-11eb-3257-3dfa9f1178de
+plotly()
+
 # ╔═╡ 0979085c-19ef-11eb-38b8-032ae5772061
 md"## Retrieve raw data"
 
@@ -30,7 +33,7 @@ csv = CSV.File(HTTP.get("https://opendata.jena.de/dataset/2cc7773d-beba-43ad-980
 	);
 
 # ╔═╡ e9eaed36-11ae-11eb-21a9-2b5d76dd2d60
-raw = DataFrame(csv);
+raw = dropmissing!(DataFrame(csv), disallowmissing=true);
 
 # ╔═╡ ffd22e44-1707-11eb-3f65-b16a0dacc6f0
 raw.zeit_ = unix2datetime.(raw.zeit);
@@ -62,12 +65,10 @@ data = let
 		:cases => [raw.erkrankte[i] for i in corresp_idcs],
 		:active => [raw.aktive_faelle[i] for i in corresp_idcs],
 		:recovered => [raw.genesene[i] for i in corresp_idcs],
-		:new_cases => [raw.neu_erkrankte[i] for i in corresp_idcs]
+		:new_cases => [raw.neu_erkrankte[i] for i in corresp_idcs],
+		:dead => [raw.tote[i] for i in corresp_idcs]
 	)
-end;
-
-# ╔═╡ 8806b48a-19ef-11eb-0443-adfe4cb42e51
-HTMLTable(data);
+end
 
 # ╔═╡ 45eca0fc-19f2-11eb-18a1-4f9d0791c900
 md"### Total number of cases"
@@ -95,6 +96,12 @@ Lead recovered curve by: $(@bind recov_lead Slider(0:50, show_value=true)) days
 By minimising the squared difference between the curves, I find that the recovered curve lags behind the cases curve by **$cases_recovered_lag days**.
 This implies a recovery time of **$cases_recovered_lag days**.
 """
+
+# ╔═╡ c2df3446-3bce-11eb-1517-697d0f346f6f
+md"### Dead"
+
+# ╔═╡ d457eedc-3bce-11eb-18c1-337ec36123c7
+plot(data.time, data.dead, label=:none)
 
 # ╔═╡ 97b3fe34-19fd-11eb-1d31-cb439f8ed8e0
 md"### New cases per day"
@@ -156,7 +163,7 @@ function exp_model(series::Symbol, t0, t1)
 	
 	predict_df = DataFrame(:time => days_since_t0(data.time))
 	values = predict(model, predict_df)
-	values[data.time .< t0] .= missing
+	# values[data.time .< t0] .= missing
 	
 	ExpModel(
 		exp.(values),
@@ -178,7 +185,7 @@ Coefficient of determination ``R^2`` of that regression: $(exp_model_cases.R²)
 # ╔═╡ f507f098-170c-11eb-0471-d9c6fc16defa
 begin
 	plot(data.time, [data.cases exp_model_cases.values], label=["real" "model"], legend=:topleft)
-	vline!([t0, t1], label="region of regression")
+	plot!([t0, t1], [0, 0], lw=5, label="region of regression")
 end
 
 # ╔═╡ de29ac72-1775-11eb-2493-fbe9c4210288
@@ -195,6 +202,7 @@ plot(
 # ╔═╡ Cell order:
 # ╟─ec4f0f72-19ee-11eb-1d75-e9a73bbdd49c
 # ╠═847ba008-11ae-11eb-1055-e39d77d59e4c
+# ╟─dcca0fc6-5090-11eb-3257-3dfa9f1178de
 # ╟─0979085c-19ef-11eb-38b8-032ae5772061
 # ╠═c6da68b2-11ae-11eb-2bdc-3d7da6237852
 # ╠═e9eaed36-11ae-11eb-21a9-2b5d76dd2d60
@@ -203,19 +211,20 @@ plot(
 # ╠═0e160200-19fd-11eb-1848-215741cdc13e
 # ╟─740fb120-19ef-11eb-357c-1dd462cdf1ba
 # ╠═3db6654c-1709-11eb-2433-b1a4e12530d6
-# ╠═8806b48a-19ef-11eb-0443-adfe4cb42e51
 # ╟─45eca0fc-19f2-11eb-18a1-4f9d0791c900
 # ╠═0b779326-170b-11eb-1602-7dbe1e277b45
 # ╟─6885f3e8-19f2-11eb-0b89-4f47857177f1
 # ╟─d629204a-1773-11eb-166d-871176ee1799
 # ╟─9d148f70-19f2-11eb-2c10-2104da42ddbd
 # ╠═94fa8d5c-19f3-11eb-025f-51738530f25d
+# ╟─c2df3446-3bce-11eb-1517-697d0f346f6f
+# ╠═d457eedc-3bce-11eb-18c1-337ec36123c7
 # ╟─97b3fe34-19fd-11eb-1d31-cb439f8ed8e0
 # ╠═9f2cd460-19fd-11eb-3de8-457f73cd390f
 # ╟─d943da52-19f5-11eb-2472-7356550d3081
 # ╠═f02739e2-1768-11eb-176d-416bde3d4b1a
 # ╟─7c155ae2-19f6-11eb-1d19-d96b7ab4e155
-# ╟─1fa8a168-170c-11eb-2098-2f34033078ef
+# ╠═1fa8a168-170c-11eb-2098-2f34033078ef
 # ╟─af8c6318-19f6-11eb-2d3b-31b5b159a98a
 # ╟─eef68ee6-19f8-11eb-1ccd-d300689ecd65
 # ╟─89240fe8-19f9-11eb-2324-a7a1fb9b6398
@@ -223,5 +232,5 @@ plot(
 # ╠═fc557a84-19f8-11eb-3b57-03238b095c9d
 # ╠═f507f098-170c-11eb-0471-d9c6fc16defa
 # ╟─06ed628e-1a05-11eb-2dde-8b0414c4cce1
-# ╟─7d347f06-170e-11eb-3618-cfd9dbc0eeb8
+# ╠═7d347f06-170e-11eb-3618-cfd9dbc0eeb8
 # ╟─de29ac72-1775-11eb-2493-fbe9c4210288
