@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.15
+# v0.12.20
 
 using Markdown
 using InteractiveUtils
@@ -14,7 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ 847ba008-11ae-11eb-1055-e39d77d59e4c
-using HTTP, CSV, DataFrames, BrowseTables, Statistics, GLM, Plots, PlutoUI, Dates
+using HTTP, CSV, DataFrames, Statistics, GLM, Plots, PlutoUI, Dates
 
 # ╔═╡ ec4f0f72-19ee-11eb-1d75-e9a73bbdd49c
 md"""
