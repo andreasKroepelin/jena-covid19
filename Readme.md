@@ -1,9 +1,11 @@
 # Development of the Sars-CoV-2 pandemic in the city of Jena
 
 This is a [Pluto](https://github.com/fonsp/Pluto.jl) notebook.
-Start Pluto with
+Run it using
 ```
-$ julia -e "using Pluto; Pluto.run()"
-```
+$ julia
 
-You might need to install some required packages (see first cell in notebook).
+julia> ]activate .
+julia> using Pluto
+julia> Pluto.run(notebook = "jena-covid19.jl")
+```
