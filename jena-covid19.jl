@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.12.21
 
 using Markdown
 using InteractiveUtils
@@ -14,7 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ 847ba008-11ae-11eb-1055-e39d77d59e4c
-using HTTP, CSV, DataFrames, Statistics, GLM, Plots, PlutoUI, Dates
+using HTTP, CSV, DataFrames, TypedTables, Statistics, GLM, Plots, PlutoUI, PrettyTables, Dates
 
 # ╔═╡ ec4f0f72-19ee-11eb-1d75-e9a73bbdd49c
 md"""
@@ -60,14 +60,21 @@ data = let
 	
 	corresp_idcs = [argmin(abs.(raw.zeit_ .- t)) for t in time]
 	
-	DataFrame(
-		:time => time,
-		:cases => [raw.erkrankte[i] for i in corresp_idcs],
-		:active => [raw.aktive_faelle[i] for i in corresp_idcs],
-		:recovered => [raw.genesene[i] for i in corresp_idcs],
-		:new_cases => [raw.neu_erkrankte[i] for i in corresp_idcs],
-		:dead => [raw.tote[i] for i in corresp_idcs]
+	Table(
+		time = time,
+		cases = [raw.erkrankte[i] for i in corresp_idcs],
+		active = [raw.aktive_faelle[i] for i in corresp_idcs],
+		recovered = [raw.genesene[i] for i in corresp_idcs],
+		new_cases = [raw.neu_erkrankte[i] for i in corresp_idcs],
+		dead = [raw.tote[i] for i in corresp_idcs]
 	)
+end;
+
+# ╔═╡ f93376d2-7d2c-11eb-33b6-53b201381a37
+HTML() do io
+	print(io, """<div style="height: 300px; overflow: scroll;"> """)
+	pretty_table(io, data, backend=:html, standalone=false)
+	print(io, """</div> """)
 end
 
 # ╔═╡ 45eca0fc-19f2-11eb-18a1-4f9d0791c900
@@ -136,7 +143,10 @@ let
 end
 
 # ╔═╡ eef68ee6-19f8-11eb-1ccd-d300689ecd65
-md"### Fit exponential model to cases"
+md"### Fit exponential model to ..."
+
+# ╔═╡ 6cc7d9fa-7d2b-11eb-05ab-7b22ed4a86a4
+modelled_series = :cases
 
 # ╔═╡ 89240fe8-19f9-11eb-2324-a7a1fb9b6398
 md"""
@@ -152,18 +162,18 @@ end
 
 # ╔═╡ 7d347f06-170e-11eb-3618-cfd9dbc0eeb8
 function exp_model(series::Symbol, t0, t1)
-	days_since_t0(orig_time) = (orig_time .- t0) ./ Millisecond(Day(1))
+	days_since_t0(orig_time) = (orig_time - t0) / Millisecond(Day(1))
 	time_selection = t0 .<= data.time .<= t1
-	fit_df = DataFrame(
-		:values => data[time_selection, series],
-		:time => days_since_t0(data[time_selection, :time])
+	fit_tab = Table(
+		values = getproperty(data, series)[time_selection],
+		time = days_since_t0.(data.time[time_selection])
 	)
 	
-	model = lm(@formula(log(values) ~ 1 + time), fit_df)
+	model = lm(@formula(log(values) ~ 1 + time), fit_tab)
 	
-	predict_df = DataFrame(:time => days_since_t0(data.time))
-	values = predict(model, predict_df)
-	# values[data.time .< t0] .= missing
+	predict_tab = Table(time = days_since_t0.(data.time))
+	values = predict(model, predict_tab)
+	values[(data.time .< t0) .| (data.time .> t1)] .= missing
 	
 	ExpModel(
 		exp.(values),
@@ -173,7 +183,7 @@ function exp_model(series::Symbol, t0, t1)
 end
 
 # ╔═╡ fc557a84-19f8-11eb-3b57-03238b095c9d
-exp_model_cases = exp_model(:cases, t0, t1);
+exp_model_cases = exp_model(modelled_series, t0, t1);
 
 # ╔═╡ f9c3fc86-19f9-11eb-1156-e7bdc755a3a2
 md"""
@@ -184,7 +194,7 @@ Coefficient of determination ``R^2`` of that regression: $(exp_model_cases.R²)
 
 # ╔═╡ f507f098-170c-11eb-0471-d9c6fc16defa
 begin
-	plot(data.time, [data.cases exp_model_cases.values], label=["real" "model"], legend=:topleft)
+	plot(data.time, [getproperty(data, modelled_series) exp_model_cases.values], label=["real" "model"], legend=:topleft)
 	plot!([t0, t1], [0, 0], lw=5, label="region of regression")
 end
 
@@ -211,6 +221,7 @@ plot(
 # ╠═0e160200-19fd-11eb-1848-215741cdc13e
 # ╟─740fb120-19ef-11eb-357c-1dd462cdf1ba
 # ╠═3db6654c-1709-11eb-2433-b1a4e12530d6
+# ╠═f93376d2-7d2c-11eb-33b6-53b201381a37
 # ╟─45eca0fc-19f2-11eb-18a1-4f9d0791c900
 # ╠═0b779326-170b-11eb-1602-7dbe1e277b45
 # ╟─6885f3e8-19f2-11eb-0b89-4f47857177f1
@@ -227,6 +238,7 @@ plot(
 # ╠═1fa8a168-170c-11eb-2098-2f34033078ef
 # ╟─af8c6318-19f6-11eb-2d3b-31b5b159a98a
 # ╟─eef68ee6-19f8-11eb-1ccd-d300689ecd65
+# ╠═6cc7d9fa-7d2b-11eb-05ab-7b22ed4a86a4
 # ╟─89240fe8-19f9-11eb-2324-a7a1fb9b6398
 # ╟─f9c3fc86-19f9-11eb-1156-e7bdc755a3a2
 # ╠═fc557a84-19f8-11eb-3b57-03238b095c9d
