@@ -72,7 +72,7 @@ end;
 
 # ╔═╡ f93376d2-7d2c-11eb-33b6-53b201381a37
 HTML() do io
-	print(io, """<div style="height: 300px; overflow: scroll;"> """)
+	print(io, """<div style="height: 300px; overflow: auto;"> """)
 	pretty_table(io, data, backend=:html, standalone=false)
 	print(io, """</div> """)
 end
@@ -221,7 +221,7 @@ plot(
 # ╠═0e160200-19fd-11eb-1848-215741cdc13e
 # ╟─740fb120-19ef-11eb-357c-1dd462cdf1ba
 # ╠═3db6654c-1709-11eb-2433-b1a4e12530d6
-# ╠═f93376d2-7d2c-11eb-33b6-53b201381a37
+# ╟─f93376d2-7d2c-11eb-33b6-53b201381a37
 # ╟─45eca0fc-19f2-11eb-18a1-4f9d0791c900
 # ╠═0b779326-170b-11eb-1602-7dbe1e277b45
 # ╟─6885f3e8-19f2-11eb-0b89-4f47857177f1
